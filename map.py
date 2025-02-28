@@ -24,6 +24,7 @@ droughtLayer = folium.FeatureGroup(name="Drought", show=False)
 # Sample Heatmap Data
 #rainfall_data = [[7.1, 43.6, 60], [12.0, 40.8, 50], [7.8, 34.4, 70]]
 temperature_data = [[7.2, 42.5, 35], [11.5, 39.9, 40], [8.0, 33.5, 30]]
+drought_data = [[7.1, 43.6, 60], [12.0, 40.8, 50], [7.8, 34.4, 70]]
 
 ##### TRIAL FOR THE GEOJSON FILE####
 # Load the GeoJSON file
@@ -42,9 +43,8 @@ for feature in geojson_data["features"]:
 
 # Add HeatMap layers
 HeatMap(data=rainfall_data, radius=15, blur=10).add_to(rainfallLayer)
-#HeatMap(data=temperature_data, radius=15, blur=10).add_to(temperatureLayer)
-
-
+HeatMap(data=temperature_data, radius=15, blur=10).add_to(temperatureLayer)
+HeatMap(data=drought_data, radius=15, blur=10).add_to(droughtLayer)
 
 # Add layers to map
 mapObj.add_child(rainfallLayer)
