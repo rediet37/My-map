@@ -1,0 +1,42 @@
+#sidebar {
+    position: fixed;
+    width: 150px;
+    height: 500px;
+    background: rgb(230, 229, 229);
+    z-index: 1000;
+    border-radius: 5px;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+#sidebar h3 {
+    margin: 0 0 10px;
+    font-size: 18px;
+    text-align: center;
+}
+
+#sidebar button {
+    width: 100%;
+    margin: 5px 0;
+    padding: 8px;
+    background: rgb(230, 229, 229);
+    color: black;
+    border: none;
+    cursor: pointer;
+    border-radius: 3px;
+    font-size: 14px;
+}
+
+#sidebar button:hover {
+    background: white;
+}
+
+#sub-options {
+    display: none;
+    margin-top: 10px;
+}
+
+#category-title {
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
