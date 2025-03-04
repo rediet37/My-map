@@ -1,5 +1,6 @@
 // Initialize state for all subcategories
 let subcategoryState = {};
+let activeLegends = {};
 
 // Function to toggle category (expand/collapse)
 function toggleCategory(category) {
@@ -30,6 +31,7 @@ function toggleCategory(category) {
 // Function to toggle a specific subcategory layer
 function toggleSubcategoryLayer(checkbox) {
     const layerName = checkbox.dataset.layer;
+    const legendType = checkbox.dataset.legend;
     const isChecked = checkbox.checked;
     
     // Store the state
@@ -45,12 +47,61 @@ function toggleSubcategoryLayer(checkbox) {
             input.click();
         }
     });
+    
+    // Update legend visibility
+    updateLegendVisibility(legendType, isChecked);
+}
+
+// Function to update legend visibility
+function updateLegendVisibility(legendType, isChecked) {
+    if (!legendType) return;
+    
+    // Track if this legend should be shown
+    if (isChecked) {
+        activeLegends[legendType] = true;
+    } else {
+        // Only set to false if no other layer of this type is active
+        const otherLayersOfSameType = document.querySelectorAll(`[data-legend="${legendType}"]`);
+        let anyOtherActive = false;
+        otherLayersOfSameType.forEach(layer => {
+            if (layer.checked && layer !== document.activeElement) {
+                anyOtherActive = true;
+            }
+        });
+        
+        if (!anyOtherActive) {
+            activeLegends[legendType] = false;
+        }
+    }
+    
+    // Update legend visibility
+    for (const type in activeLegends) {
+        const legendElement = document.getElementById(`legend-${type}`);
+        if (legendElement) {
+            legendElement.style.display = activeLegends[type] ? 'block' : 'none';
+        }
+    }
+    
+    // Show/hide the legend container based on if any legends are active
+    const legendContainer = document.getElementById('legend-container');
+    const anyLegendActive = Object.values(activeLegends).some(value => value);
+    if (legendContainer) {
+        legendContainer.style.display = anyLegendActive ? 'block' : 'none';
+    }
 }
 
 // Function to sync checkboxes with Folium layer states
 function syncLayerStates() {
     const layerControls = document.querySelectorAll('.leaflet-control-layers-overlays input');
     const subcategoryCheckboxes = document.querySelectorAll('.subcategory input[type="checkbox"]');
+    
+    // Reset active legends
+    activeLegends = {
+        rainfall: false,
+        temperature: false,
+        drought: false,
+        climate: false
+    };
     
     // Create a mapping of layer names to their current state
     const layerStates = {};
@@ -62,11 +113,33 @@ function syncLayerStates() {
     // Update subcategory checkboxes based on layer states
     subcategoryCheckboxes.forEach(checkbox => {
         const layerName = checkbox.dataset.layer;
+        const legendType = checkbox.dataset.legend;
+        
         if (layerName in layerStates) {
             checkbox.checked = layerStates[layerName];
             subcategoryState[checkbox.id] = layerStates[layerName];
+            
+            // Update legend state
+            if (checkbox.checked && legendType) {
+                activeLegends[legendType] = true;
+            }
         }
     });
+    
+    // Update all legends visibility
+    for (const type in activeLegends) {
+        const legendElement = document.getElementById(`legend-${type}`);
+        if (legendElement) {
+            legendElement.style.display = activeLegends[type] ? 'block' : 'none';
+        }
+    }
+    
+    // Show/hide the legend container
+    const legendContainer = document.getElementById('legend-container');
+    const anyLegendActive = Object.values(activeLegends).some(value => value);
+    if (legendContainer) {
+        legendContainer.style.display = anyLegendActive ? 'block' : 'none';
+    }
 }
 
 // Initialize on page load
@@ -76,6 +149,20 @@ document.addEventListener('DOMContentLoaded', function() {
     allSubcategories.forEach(el => {
         el.style.display = 'none';
     });
+    
+    // Hide legend container initially
+    const legendContainer = document.getElementById('legend-container');
+    if (legendContainer) {
+        legendContainer.style.display = 'none';
+    }
+    
+    // Initialize active legends state
+    activeLegends = {
+        rainfall: false,
+        temperature: false,
+        drought: false,
+        climate: false
+    };
     
     // Set up monitoring of Folium layer changes
     setTimeout(() => {

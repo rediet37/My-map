@@ -90,6 +90,55 @@
     display: none;
 }
 
+/* Legend Container Styles */
+#legend-container {
+    position: absolute;
+    top: 0px;
+    left: 185px;
+    z-index: 1000;
+    background-color: white;
+    padding: 15px;
+    border-radius: 5px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    max-width: 200px;
+    height: 100px;
+}
+
+.legend-item {
+    margin-bottom: 10px;
+}
+
+.legend-item h4 {
+    margin: 0 0 5px 0;
+    font-size: 14px;
+}
+
+.legend-gradient {
+    height: 15px;
+    width: 100%;
+    border-radius: 2px;
+    margin-bottom: 3px;
+}
+
+.rainfall-gradient {
+    background: linear-gradient(to right, blue, green, yellow, orange, red);
+}
+
+.temperature-gradient {
+    background: linear-gradient(to right, blue, cyan, yellow, orange, red);
+}
+
+.drought-gradient {
+    background: linear-gradient(to right, green, yellow, orange, red, darkred);
+}
+
+.legend-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: #666;
+}
+
 /* For mobile responsiveness */
 @media (max-width: 600px) {
     #sidebar {
@@ -99,4 +148,15 @@
     .leaflet-left {
         margin-left: 160px;
     }
+    
+    #legend-container {
+        bottom: 10px;
+        right: 10px;
+        max-width: 150px;
+    }
+}
+
+/* Hide the default Folium colormaps */
+.leaflet-control-colormap {
+    display: none !important;
 }
