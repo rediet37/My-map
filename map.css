@@ -1,42 +1,102 @@
 #sidebar {
-    position: fixed;
-    width: 150px;
-    height: 500px;
-    background: rgb(230, 229, 229);
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 180px;
+    height: 100%;
+    background-color: white;
     z-index: 1000;
-    border-radius: 5px;
-    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
+    padding: 10px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    overflow-y: auto;
 }
 
 #sidebar h3 {
-    margin: 0 0 10px;
-    font-size: 18px;
-    text-align: center;
+    margin-top: 0;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #ddd;
+    font-size: 16px;
 }
 
-#sidebar button {
+.category {
+    margin-bottom: 5px;
+}
+
+.category-btn {
+    display: block;
     width: 100%;
-    margin: 5px 0;
-    padding: 8px;
-    background: rgb(230, 229, 229);
-    color: black;
+    text-align: left;
+    padding: 8px 5px;
+    margin: 2px 0;
+    background: none;
     border: none;
     cursor: pointer;
-    border-radius: 3px;
+    font-weight: bold;
     font-size: 14px;
 }
 
-#sidebar button:hover {
-    background: white;
+.category-btn:hover {
+    background-color: #f5f5f5;
 }
 
-#sub-options {
+.category-btn.active {
+    background-color: #f0f0f0;
+    border-left: 3px solid #4682B4;
+}
+
+.subcategories {
+    margin-left: 10px;
+    padding-left: 5px;
+    border-left: 1px solid #eee;
     display: none;
-    margin-top: 10px;
 }
 
-#category-title {
-    font-size: 16px;
-    font-weight: bold;
-    margin-bottom: 5px;
+.subcategory {
+    margin: 8px 0;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+}
+
+.subcategory input[type="checkbox"] {
+    margin-right: 5px;
+}
+
+.info-icon {
+    margin-left: 5px;
+    color: #999;
+    cursor: help;
+    font-size: 10px;
+}
+
+.tooltip {
+    position: absolute;
+    background-color: #333;
+    color: #fff;
+    padding: 5px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    z-index: 1010;
+    max-width: 200px;
+}
+
+/* Make room for the sidebar */
+.leaflet-left {
+    margin-left: 200px;
+}
+
+/* Optionally hide the layer control */
+.leaflet-control-layers {
+    display: none;
+}
+
+/* For mobile responsiveness */
+@media (max-width: 600px) {
+    #sidebar {
+        width: 150px;
+    }
+    
+    .leaflet-left {
+        margin-left: 160px;
+    }
 }
