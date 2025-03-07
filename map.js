@@ -1,9 +1,17 @@
 // Initialize state for all subcategories
 let subcategoryState = {};
 let activeLegends = {};
+let activeTab = 'legend'; // Default tab is legend
 
 // Function to toggle category (expand/collapse)
 function toggleCategory(category) {
+    // Get the selected category's subcategories
+    const targetSubcategories = document.getElementById(`${category}-subcategories`);
+    
+    // Check if it's already visible
+    const isVisible = targetSubcategories && 
+                     targetSubcategories.style.display === 'block';
+    
     // Get all subcategories elements
     const allSubcategories = document.querySelectorAll('.subcategories');
     
@@ -12,20 +20,21 @@ function toggleCategory(category) {
         el.style.display = 'none';
     });
     
-    // Show the selected category's subcategories
-    const targetSubcategories = document.getElementById(`${category}-subcategories`);
-    if (targetSubcategories) {
+    // If it wasn't visible, show it (otherwise it remains hidden)
+    if (targetSubcategories && !isVisible) {
         targetSubcategories.style.display = 'block';
     }
     
-    // Highlight the active category button
+    // Highlight the active category button - only if we're opening
     const allCategoryBtns = document.querySelectorAll('.category-btn');
     allCategoryBtns.forEach(btn => {
         btn.classList.remove('active');
     });
     
-    // Add active class to the clicked button
-    document.querySelector(`.category-btn[onclick="toggleCategory('${category}')"]`).classList.add('active');
+    // Add active class to the clicked button - only if we're opening
+    if (!isVisible) {
+        document.querySelector(`.category-btn[onclick="toggleCategory('${category}')"]`).classList.add('active');
+    }
 }
 
 // Function to toggle a specific subcategory layer
@@ -74,21 +83,106 @@ function updateLegendVisibility(legendType, isChecked) {
         }
     }
     
-    // Update legend visibility
-    for (const type in activeLegends) {
-        const legendElement = document.getElementById(`legend-${type}`);
-        if (legendElement) {
-            legendElement.style.display = activeLegends[type] ? 'block' : 'none';
+    // Update legend visibility if we're in the legend tab
+    if (activeTab === 'legend') {
+        for (const type in activeLegends) {
+            const legendElement = document.getElementById(`legend-${type}`);
+            if (legendElement) {
+                legendElement.style.display = activeLegends[type] ? 'block' : 'none';
+            }
         }
     }
+}
+
+// Function to switch between tabs (legend and analysis)
+function switchTab(tabName) {
+    activeTab = tabName;
     
-    // Show/hide the legend container based on if any legends are active
+    // Update tab button styles
+    document.getElementById('legend-tab').classList.toggle('active', tabName === 'legend');
+    document.getElementById('analysis-tab').classList.toggle('active', tabName === 'analysis');
+    
+    // Show/hide appropriate container
     const legendContainer = document.getElementById('legend-container');
-    const anyLegendActive = Object.values(activeLegends).some(value => value);
-    if (legendContainer) {
-        legendContainer.style.display = anyLegendActive ? 'block' : 'none';
+    const analysisContainer = document.getElementById('analysis-container');
+    
+    if (tabName === 'legend') {
+        legendContainer.style.display = 'block';
+        analysisContainer.style.display = 'none';
+        
+        // Update legend items visibility based on active layers
+        for (const type in activeLegends) {
+            const legendElement = document.getElementById(`legend-${type}`);
+            if (legendElement) {
+                legendElement.style.display = activeLegends[type] ? 'block' : 'none';
+            }
+        }
+    } else { // analysis
+        legendContainer.style.display = 'none';
+        analysisContainer.style.display = 'block';
     }
 }
+
+// Function to populate analysis content when "Analyze" button is clicked
+function performAnalysis(regionName) {
+    const analysisContainer = document.getElementById('analysis-container');
+    if (!analysisContainer) return;
+    
+    // Switch to analysis tab
+    switchTab('analysis');
+    
+    // Update analysis content
+    const analysisContent = document.getElementById('analysis-content');
+    if (analysisContent) {
+        analysisContent.innerHTML = `
+            <h4>${regionName.toUpperCase()}</h4>
+            <div class="analysis-header">
+                <span>WEEKLY EXCEPTIONAL RAINFALL - POPULATION EXPOSED FOR ${regionName.toUpperCase()}</span>
+                <button class="info-button">ⓘ</button>
+            </div>
+            <div class="analysis-details">
+                <p>Forecast Period: 5th Mar 2025 to 12th Mar 2025</p>
+                <div class="analysis-data">
+                    <p>These areas are highlighted based on the sampling of the selected period. Results may be clearer at closer zoom levels.</p>
+                </div>
+                <div class="analysis-buttons">
+                    <button class="refresh-button">REFRESH ANALYSIS</button>
+                    <button class="cancel-button">CANCEL ANALYSIS</button>
+                </div>
+                <div class="interest-section">
+                    <h5>INTERESTED IN THIS PARTICULAR AREA?</h5>
+                    <p>Save this area to create a dashboard with a more in-depth analysis and receive email updates on products that we monitor.</p>
+                </div>
+            </div>
+        `;
+        
+        // Add event listener to cancel button
+        const cancelButton = analysisContent.querySelector('.cancel-button');
+        if (cancelButton) {
+            cancelButton.addEventListener('click', () => {
+                switchTab('legend');
+            });
+        }
+    }
+}
+
+// Event listener for the "Analyze" button using event delegation
+document.addEventListener('click', function(event) {
+    if (event.target && event.target.id === 'analyze-button') {
+        // Get the region name from the popup (parent elements)
+        const popup = event.target.closest('.leaflet-popup-content');
+        let regionName = "Selected Region";
+        
+        if (popup) {
+            const heading = popup.querySelector('h3');
+            if (heading) {
+                regionName = heading.textContent;
+            }
+        }
+        
+        performAnalysis(regionName);
+    }
+});
 
 // Function to sync checkboxes with Folium layer states
 function syncLayerStates() {
@@ -126,19 +220,14 @@ function syncLayerStates() {
         }
     });
     
-    // Update all legends visibility
-    for (const type in activeLegends) {
-        const legendElement = document.getElementById(`legend-${type}`);
-        if (legendElement) {
-            legendElement.style.display = activeLegends[type] ? 'block' : 'none';
+    // Update all legends visibility if in legend tab
+    if (activeTab === 'legend') {
+        for (const type in activeLegends) {
+            const legendElement = document.getElementById(`legend-${type}`);
+            if (legendElement) {
+                legendElement.style.display = activeLegends[type] ? 'block' : 'none';
+            }
         }
-    }
-    
-    // Show/hide the legend container
-    const legendContainer = document.getElementById('legend-container');
-    const anyLegendActive = Object.values(activeLegends).some(value => value);
-    if (legendContainer) {
-        legendContainer.style.display = anyLegendActive ? 'block' : 'none';
     }
 }
 
@@ -150,11 +239,20 @@ document.addEventListener('DOMContentLoaded', function() {
         el.style.display = 'none';
     });
     
-    // Hide legend container initially
-    const legendContainer = document.getElementById('legend-container');
-    if (legendContainer) {
-        legendContainer.style.display = 'none';
+    // Set up tabs
+    const legendTabBtn = document.getElementById('legend-tab');
+    const analysisTabBtn = document.getElementById('analysis-tab');
+    
+    if (legendTabBtn) {
+        legendTabBtn.addEventListener('click', () => switchTab('legend'));
     }
+    
+    if (analysisTabBtn) {
+        analysisTabBtn.addEventListener('click', () => switchTab('analysis'));
+    }
+    
+    // Initialize tab state
+    switchTab('legend');
     
     // Initialize active legends state
     activeLegends = {
