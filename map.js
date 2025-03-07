@@ -4,6 +4,9 @@ let activeLegends = {};
 let activeTab = 'legend'; // Default tab is legend
 
 // Function to toggle category (expand/collapse)
+// Hides all subcategories before toggling the selected one.
+//Updates the UI by highlighting the active category button.
+
 function toggleCategory(category) {
     // Get the selected category's subcategories
     const targetSubcategories = document.getElementById(`${category}-subcategories`);
@@ -38,21 +41,25 @@ function toggleCategory(category) {
 }
 
 // Function to toggle a specific subcategory layer
+//Syncs UI checkbox states with Folium's layer controls.
+//Simulates a click on the corresponding layer control in Folium.
+//Calls updateLegendVisibility() to manage legend display.
+
 function toggleSubcategoryLayer(checkbox) {
     const layerName = checkbox.dataset.layer;
     const legendType = checkbox.dataset.legend;
     const isChecked = checkbox.checked;
     
-    // Store the state
+    // Store the state of the checkbox
     subcategoryState[checkbox.id] = isChecked;
     
     // Find the corresponding layer control checkbox in Folium's layer control
     const layerControls = document.querySelectorAll('.leaflet-control-layers-overlays input');
     
-    layerControls.forEach(input => {
+    layerControls.forEach(input => { //Iterates over each layer control checkbox
         const label = input.nextElementSibling.textContent.trim();
         if (label === layerName && input.checked !== isChecked) {
-            // Programmatically click the Folium layer checkbox
+            // Programmatically click the Folium layer checkbox if its state doesn't match the checkbox state.
             input.click();
         }
     });
@@ -62,10 +69,15 @@ function toggleSubcategoryLayer(checkbox) {
 }
 
 // Function to update legend visibility
+//Tracks active legends in activeLegends based on layer visibility.
+//If no other subcategory of the same type is active, the legend is hidden.
+//Only updates the legend display if the legend tab is currently selected.
+
 function updateLegendVisibility(legendType, isChecked) {
     if (!legendType) return;
     
-    // Track if this legend should be shown
+    // Track if this legend should be shown. Sets the legend type to active if the checkbox is checked.
+
     if (isChecked) {
         activeLegends[legendType] = true;
     } else {
