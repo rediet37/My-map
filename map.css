@@ -200,60 +200,111 @@
     padding-top: 15px;
 }
 
-.analysis-header {
+#analysis-placeholder {
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
-    margin-bottom: 10px;
-    font-weight: bold;
+    height: 150px;
+    color: #666;
+    font-style: italic;
+    text-align: center;
+    border: 1px dashed #ccc;
+    border-radius: 5px;
+    margin: 10px 0;
 }
 
-.info-button {
-    background: none;
-    border: none;
-    color: #888;
-    cursor: help;
+#analysis-region-data h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #333;
+    font-size: 18px;
+    border-bottom: 2px solid #2c7fb8;
+    padding-bottom: 8px;
 }
 
-.analysis-details {
-    border-top: 1px solid #eee;
-    padding-top: 10px;
-}
-
+/* Season Buttons */
 .analysis-buttons {
     display: flex;
-    gap: 10px;
-    margin: 15px 0;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 15px;
 }
 
-.refresh-button {
-    background: #4CAF50;
-    color: white;
-    border: none;
-    padding: 8px 15px;
+.season-btn {
+    padding: 8px 12px;
+    background-color: #f0f0f0;
+    border: 1px solid #ddd;
     border-radius: 4px;
     cursor: pointer;
+    font-size: 13px;
+    transition: all 0.3s ease;
 }
 
-.cancel-button {
-    background: #F44336;
+.season-btn:hover {
+    background-color: #e0e0e0;
+}
+
+.season-btn.active {
+    background-color: #2c7fb8;
     color: white;
-    border: none;
-    padding: 8px 15px;
-    border-radius: 4px;
-    cursor: pointer;
+    border-color: #1c6ea4;
 }
 
-.interest-section {
-    background: #f9f9f9;
-    padding: 10px;
+/* Chart Container */
+#chart-container {
+    height: 220px;
+    margin-bottom: 15px;
+    border: 1px solid #eee;
     border-radius: 4px;
-    margin-top: 15px;
+    padding: 8px;
+    background-color: white;
 }
 
-.interest-section h5 {
+/* Data Summary Section */
+#data-summary {
+    background-color: #f9f9f9;
+    border-radius: 4px;
+    padding: 12px;
+    margin-top: 10px;
+    font-size: 13px;
+}
+
+#data-summary h4 {
     margin-top: 0;
+    margin-bottom: 10px;
+    color: #444;
+    font-size: 15px;
 }
+
+#data-summary p {
+    margin: 6px 0;
+    line-height: 1.4;
+}
+
+#data-summary strong {
+    color: #2c7fb8;
+}
+
+
+/* Scrollbar styling for the analysis panel */
+#analysis-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+#analysis-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+#analysis-container::-webkit-scrollbar-thumb {
+    background: #bbb;
+    border-radius: 4px;
+}
+
+#analysis-container::-webkit-scrollbar-thumb:hover {
+    background: #999;
+}
+
 
 /* Tooltip */
 .tooltip {

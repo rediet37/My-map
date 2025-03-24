@@ -3,10 +3,27 @@ let subcategoryState = {};
 let activeLegends = {};
 let activeTab = 'legend'; // Default tab is legend
 
-// Function to toggle category (expand/collapse)
-// Hides all subcategories before toggling the selected one.
-//Updates the UI by highlighting the active category button.
+let climateData = null; // Will store the seasonal climate data
+let currentRegion = null; // Store the currently selected region
+let chart = null; // Store the chart instance for reuse/updates
 
+// Load climate data on page load
+document.addEventListener('DOMContentLoaded', async function() {
+    try {
+        const response = await fetch('seasonal_data_2005_2014.json');
+        climateData = await response.json();
+        console.log('Climate data loaded:', climateData);
+        
+        // Set up event listeners for analyze buttons in popups
+        setupAnalyzeButtons();
+        
+    } catch (error) {
+        console.error('Error loading climate data:', error);
+    }
+});
+
+
+// Function to toggle category (expand/collapse)
 function toggleCategory(category) {
     // Get the selected category's subcategories
     const targetSubcategories = document.getElementById(`${category}-subcategories`);
@@ -41,25 +58,21 @@ function toggleCategory(category) {
 }
 
 // Function to toggle a specific subcategory layer
-//Syncs UI checkbox states with Folium's layer controls.
-//Simulates a click on the corresponding layer control in Folium.
-//Calls updateLegendVisibility() to manage legend display.
-
 function toggleSubcategoryLayer(checkbox) {
     const layerName = checkbox.dataset.layer;
     const legendType = checkbox.dataset.legend;
     const isChecked = checkbox.checked;
     
-    // Store the state of the checkbox
+    // Store the state
     subcategoryState[checkbox.id] = isChecked;
     
     // Find the corresponding layer control checkbox in Folium's layer control
     const layerControls = document.querySelectorAll('.leaflet-control-layers-overlays input');
     
-    layerControls.forEach(input => { //Iterates over each layer control checkbox
+    layerControls.forEach(input => {
         const label = input.nextElementSibling.textContent.trim();
         if (label === layerName && input.checked !== isChecked) {
-            // Programmatically click the Folium layer checkbox if its state doesn't match the checkbox state.
+            // Programmatically click the Folium layer checkbox
             input.click();
         }
     });
@@ -69,15 +82,10 @@ function toggleSubcategoryLayer(checkbox) {
 }
 
 // Function to update legend visibility
-//Tracks active legends in activeLegends based on layer visibility.
-//If no other subcategory of the same type is active, the legend is hidden.
-//Only updates the legend display if the legend tab is currently selected.
-
 function updateLegendVisibility(legendType, isChecked) {
     if (!legendType) return;
     
-    // Track if this legend should be shown. Sets the legend type to active if the checkbox is checked.
-
+    // Track if this legend should be shown
     if (isChecked) {
         activeLegends[legendType] = true;
     } else {
@@ -135,66 +143,299 @@ function switchTab(tabName) {
     }
 }
 
-// Function to populate analysis content when "Analyze" button is clicked
-function performAnalysis(regionName) {
-    const analysisContainer = document.getElementById('analysis-container');
-    if (!analysisContainer) return;
-    
-    // Switch to analysis tab
-    switchTab('analysis');
-    
-    // Update analysis content
-    const analysisContent = document.getElementById('analysis-content');
-    if (analysisContent) {
-        analysisContent.innerHTML = `
-            <h4>${regionName.toUpperCase()}</h4>
-            <div class="analysis-header">
-                <span>WEEKLY EXCEPTIONAL RAINFALL - POPULATION EXPOSED FOR ${regionName.toUpperCase()}</span>
-                <button class="info-button">ⓘ</button>
-            </div>
-            <div class="analysis-details">
-                <p>Forecast Period: 5th Mar 2025 to 12th Mar 2025</p>
-                <div class="analysis-data">
-                    <p>These areas are highlighted based on the sampling of the selected period. Results may be clearer at closer zoom levels.</p>
-                </div>
-                <div class="analysis-buttons">
-                    <button class="refresh-button">REFRESH ANALYSIS</button>
-                    <button class="cancel-button">CANCEL ANALYSIS</button>
-                </div>
-                <div class="interest-section">
-                    <h5>INTERESTED IN THIS PARTICULAR AREA?</h5>
-                    <p>Save this area to create a dashboard with a more in-depth analysis and receive email updates on products that we monitor.</p>
-                </div>
-            </div>
-        `;
-        
-        // Add event listener to cancel button
-        const cancelButton = analysisContent.querySelector('.cancel-button');
-        if (cancelButton) {
-            cancelButton.addEventListener('click', () => {
-                switchTab('legend');
+// Set up event listeners for the Analyze buttons in map popups
+function setupAnalyzeButtons() {
+    // Use MutationObserver to detect when popups are added to the DOM
+    const observer = new MutationObserver(mutations => {
+        mutations.forEach(mutation => {
+            mutation.addedNodes.forEach(node => {
+                if (node.nodeType === Node.ELEMENT_NODE) {
+                    const analyzeButton = node.querySelector('#analyze-button');
+                    if (analyzeButton) {
+                        analyzeButton.addEventListener('click', function() {
+                            // Get the region name from the popup content
+                            const popupContent = analyzeButton.closest('.leaflet-popup-content');
+                            const regionName = popupContent.querySelector('h3').textContent;
+                            
+                            // Switch to analysis tab and show data for the region
+                            switchTab('analysis');
+                            showRegionAnalysis(regionName);
+                        });
+                    }
+                }
             });
-        }
-    }
+        });
+    });
+    
+    // Start observing the document body
+    observer.observe(document.body, { childList: true, subtree: true });
 }
 
-// Event listener for the "Analyze" button using event delegation
-document.addEventListener('click', function(event) {
-    if (event.target && event.target.id === 'analyze-button') {
-        // Get the region name from the popup (parent elements)
-        const popup = event.target.closest('.leaflet-popup-content');
-        let regionName = "Selected Region";
-        
-        if (popup) {
-            const heading = popup.querySelector('h3');
-            if (heading) {
-                regionName = heading.textContent;
+// Show analysis for the selected region
+function showRegionAnalysis(regionName) {
+    // Set current region
+    currentRegion = regionName;
+    
+    // Update UI
+    document.getElementById('analysis-placeholder').style.display = 'none';
+    document.getElementById('analysis-region-data').style.display = 'block';
+    document.getElementById('region-title').textContent = `${regionName} Region Analysis`;
+    
+    // Show FMAM season data by default
+    showSeasonData('fmam');
+}
+
+// Show seasonal data
+function showSeasonData(season) {
+    if (!climateData || !currentRegion || !climateData[currentRegion]) {
+        console.error('Climate data not available for region:', currentRegion);
+        return;
+    }
+    
+    // Highlight the active season button
+    document.querySelectorAll('.season-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    document.getElementById(`btn-${season}`).classList.add('active');
+    
+    // Get data for the selected season
+    const seasonData = climateData[currentRegion][season];
+    if (!seasonData) {
+        console.error(`Data for season ${season} not available`);
+        return;
+    }
+    
+    // Prepare the data for the chart
+    const years = Array.from({length: seasonData.length}, (_, i) => 2005 + i);
+    
+    // Create or update the chart
+    createBarChart(years, seasonData, `${season.toUpperCase()} Seasonal Rainfall (2005-2014)`, 'Year', 'Rainfall (mm)');
+    
+    // Display summary statistics
+    const average = (seasonData.reduce((a, b) => a + b, 0) / seasonData.length).toFixed(2);
+    const min = Math.min(...seasonData).toFixed(2);
+    const max = Math.max(...seasonData).toFixed(2);
+    
+    document.getElementById('data-summary').innerHTML = `
+        <h4>Summary Statistics:</h4>
+        <p><strong>Average Rainfall:</strong> ${average} mm</p>
+        <p><strong>Minimum:</strong> ${min} mm (${years[seasonData.indexOf(Math.min(...seasonData))]})</p>
+        <p><strong>Maximum:</strong> ${max} mm (${years[seasonData.indexOf(Math.max(...seasonData))]})</p>
+    `;
+}
+
+// Show annual cycle data
+function showAnnualCycle() {
+    if (!climateData || !currentRegion || !climateData[currentRegion]) {
+        console.error('Climate data not available for region:', currentRegion);
+        return;
+    }
+    
+    // Highlight the active button
+    document.querySelectorAll('.season-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    document.getElementById('btn-annual').classList.add('active');
+    
+    // Prepare data for the annual cycle
+    const seasonLabels = ['FMAM', 'JJAS', 'ONDJ'];
+    const averagesBySeason = seasonLabels.map(season => {
+        const seasonKey = season.toLowerCase();
+        const seasonData = climateData[currentRegion][seasonKey];
+        return seasonData ? (seasonData.reduce((a, b) => a + b, 0) / seasonData.length) : 0;
+    });
+    
+    // Create or update the chart
+    createBarChart(seasonLabels, averagesBySeason, 'Average Rainfall by Season (2005-2014)', 'Season', 'Average Rainfall (mm)');
+    
+    // Display summary
+    const annualAverage = (averagesBySeason.reduce((a, b) => a + b, 0) / averagesBySeason.length).toFixed(2);
+    const wetSeason = seasonLabels[averagesBySeason.indexOf(Math.max(...averagesBySeason))];
+    const drySeason = seasonLabels[averagesBySeason.indexOf(Math.min(...averagesBySeason))];
+    
+    document.getElementById('data-summary').innerHTML = `
+        <h4>Annual Cycle Summary:</h4>
+        <p><strong>Overall Average:</strong> ${annualAverage} mm per season</p>
+        <p><strong>Wettest Season:</strong> ${wetSeason} (${Math.max(...averagesBySeason).toFixed(2)} mm)</p>
+        <p><strong>Driest Season:</strong> ${drySeason} (${Math.min(...averagesBySeason).toFixed(2)} mm)</p>
+    `;
+}
+
+// Show time series data
+function showTimeSeries() {
+    if (!climateData || !currentRegion || !climateData[currentRegion]) {
+        console.error('Climate data not available for region:', currentRegion);
+        return;
+    }
+    
+    // Highlight the active button
+    document.querySelectorAll('.season-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    document.getElementById('btn-timeseries').classList.add('active');
+    
+    // Prepare data for all seasons
+    const years = Array.from({length: 10}, (_, i) => 2005 + i);
+    const fmamData = climateData[currentRegion]['fmam'] || [];
+    const jjasData = climateData[currentRegion]['jjas'] || [];
+    const ondjData = climateData[currentRegion]['ondj'] || [];
+    
+    // Create or update the time series chart
+    createTimeSeriesChart(years, fmamData, jjasData, ondjData);
+    
+    // Display summary
+    const fmamTrend = calculateTrend(fmamData);
+    const jjasTrend = calculateTrend(jjasData);
+    const ondjTrend = calculateTrend(ondjData);
+    
+    document.getElementById('data-summary').innerHTML = `
+        <h4>Time Series Analysis (2005-2014):</h4>
+        <p><strong>FMAM Trend:</strong> ${fmamTrend > 0 ? 'Increasing' : 'Decreasing'} (${Math.abs(fmamTrend).toFixed(2)} mm/year)</p>
+        <p><strong>JJAS Trend:</strong> ${jjasTrend > 0 ? 'Increasing' : 'Decreasing'} (${Math.abs(jjasTrend).toFixed(2)} mm/year)</p>
+        <p><strong>ONDJ Trend:</strong> ${ondjTrend > 0 ? 'Increasing' : 'Decreasing'} (${Math.abs(ondjTrend).toFixed(2)} mm/year)</p>
+    `;
+}
+
+// Calculate a simple linear trend
+function calculateTrend(data) {
+    if (!data || data.length < 2) return 0;
+    
+    const n = data.length;
+    let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+    
+    for (let i = 0; i < n; i++) {
+        sumX += i;
+        sumY += data[i];
+        sumXY += i * data[i];
+        sumX2 += i * i;
+    }
+    
+    const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+    return slope;
+}
+
+// Create or update a bar chart
+function createBarChart(labels, data, title, xAxisLabel, yAxisLabel) {
+    const ctx = document.getElementById('climate-chart').getContext('2d');
+    
+    // Destroy previous chart if it exists
+    if (chart) {
+        chart.destroy();
+    }
+    
+    chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: title,
+                data: data,
+                backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: yAxisLabel
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: xAxisLabel
+                    }
+                }
+            },
+            plugins: {
+                title: {
+                    display: true,
+                    text: title,
+                    font: {
+                        size: 16
+                    }
+                }
             }
         }
-        
-        performAnalysis(regionName);
+    });
+}
+
+// Create or update a time series chart
+function createTimeSeriesChart(years, fmamData, jjasData, ondjData) {
+    const ctx = document.getElementById('climate-chart').getContext('2d');
+    
+    // Destroy previous chart if it exists
+    if (chart) {
+        chart.destroy();
     }
-});
+    
+    chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: years,
+            datasets: [
+                {
+                    label: 'FMAM Season',
+                    data: fmamData,
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.1
+                },
+                {
+                    label: 'JJAS Season',
+                    data: jjasData,
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.1
+                },
+                {
+                    label: 'ONDJ Season',
+                    data: ondjData,
+                    borderColor: 'rgba(255, 159, 64, 1)',
+                    backgroundColor: 'rgba(255, 159, 64, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Rainfall (mm)'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Year'
+                    }
+                }
+            },
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Rainfall Time Series (2005-2014)',
+                    font: {
+                        size: 16
+                    }
+                }
+            }
+        }
+    });
+}
 
 // Function to sync checkboxes with Folium layer states
 function syncLayerStates() {
