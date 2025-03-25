@@ -22,6 +22,44 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 });
 
+// NEW NEW NEW 
+
+// Add event listener for map clicks (NEW MODIFICATION)
+map.on('click', function(e) {
+    const latlng = e.latlng;
+    
+    // Function to get region name (you might need a real lookup function)
+    const regionName = getRegionFromCoordinates(latlng.lat, latlng.lng);
+    
+    if (regionName) {
+        L.popup()
+            .setLatLng(latlng)
+            .setContent(`
+                <div>
+                    <h3>${regionName}</h3>
+                    <button id="analyze-button">Analyze</button>
+                </div>
+            `)
+            .openOn(map);
+        
+        // Ensure button has event listener when popup is created
+        setTimeout(() => {
+            document.getElementById('analyze-button').addEventListener('click', function() {
+                switchTab('analysis');
+                showRegionAnalysis(regionName);
+            });
+        }, 100);
+    }
+});
+
+// Function to get region name from coordinates (dummy function, modify as needed)
+function getRegionFromCoordinates(lat, lng) {
+    // Replace this with actual logic (e.g., reverse geocoding, predefined regions)
+    return "Sample Region"; // Default region for testing
+}
+
+
+//NEW END END NEW
 
 // Function to toggle category (expand/collapse)
 function toggleCategory(category) {
